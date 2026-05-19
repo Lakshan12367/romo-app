@@ -497,18 +497,36 @@
     }
 
     function detectCategory(url) {
+      if (!url) return 'A';
+      
       const u = url.toLowerCase();
       
-      if (u.includes('youtube') || u.includes('youtu.be') || u.includes('vimeo') || 
-          u.includes('tiktok') || u.includes('twitch') || u.includes('video')) {
+      // VIDEO detection — must check FIRST before ARTICLE
+      if (u.includes('youtube.com') || u.includes('youtu.be') || 
+          u.includes('youtube/') || u.includes('youtube?') ||
+          u.includes('vimeo.com') || u.includes('vimeo/') ||
+          u.includes('tiktok.com') || u.includes('tiktok/') ||
+          u.includes('vm.tiktok') || u.includes('vt.tiktok') ||
+          u.includes('twitch.tv') || u.includes('twitch/') ||
+          u.includes('video') || u.includes('watch?v=') ||
+          u.match(/\.(mp4|mov|avi|mkv|webm|m3u8)$/i)) {
         return 'V';
       }
       
-      if (u.includes('pinterest') || u.includes('instagram') || u.includes('are.na') || 
-          u.includes('unsplash') || u.includes('image') || u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      // IMAGE detection
+      if (u.includes('pinterest.com') || u.includes('pinterest/') ||
+          u.includes('instagram.com') || u.includes('instagram/') ||
+          u.includes('are.na') || u.includes('are.na/') ||
+          u.includes('unsplash.com') || u.includes('unsplash/') ||
+          u.includes('pexels.com') || u.includes('pexels/') ||
+          u.includes('flickr.com') || u.includes('flickr/') ||
+          u.includes('imgur.com') || u.includes('imgur/') ||
+          u.includes('/image') || u.includes('/photo') ||
+          u.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
         return 'I';
       }
       
+      // ARTICLE (default for everything else)
       return 'A';
     }
 
