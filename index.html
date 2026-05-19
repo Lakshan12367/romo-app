@@ -582,8 +582,9 @@
         await charTX.startNotifications();
         charTX.addEventListener('characteristicvaluechanged', handleNotification);
 
-        showScreen('connected');
         updateUI();
+        showScreen('queue');
+        return true;
       } catch (error) {
         alert('Connection failed: ' + error.message);
       }
@@ -745,13 +746,17 @@
         return;
       }
 
+      // Handle shared content first
+      await handleSharedContent();
+
       // Show pairing screen after splash
       setTimeout(() => {
-        showScreen('pairing');
+        if (!bleDevice || !bleDevice.gatt.connected) {
+          showScreen('pairing');
+        } else {
+          showScreen('queue');
+        }
       }, 2000);
-
-      // Handle shared content
-      await handleSharedContent();
     });
 
     // Register service worker (optional)
