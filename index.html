@@ -494,6 +494,7 @@
     let charTX = null;
     let queue = [];
     let sentCount = 0;
+    let isConnecting = false;
 
     // ════════════════════════════════════════════════════════════
     // SCREEN NAVIGATION
@@ -713,11 +714,16 @@
           url
         });
 
-        if (bleDevice && bleDevice.gatt.connected) {
-          await processQueue();
-        }
-
         updateUI();
+
+        // If already connected, process immediately
+        if (bleDevice && bleDevice.gatt.connected) {
+          setTimeout(() => processQueue(), 500);
+        }
+        // If not connected, show queue and user can manually connect
+        else {
+          showScreen('queue');
+        }
       }
     }
 
