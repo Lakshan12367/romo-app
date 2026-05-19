@@ -9,7 +9,9 @@
   <title>ROMO</title>
   
   <!-- PWA Manifest -->
-  <link rel="manifest" id="manifest">
+  <link rel="manifest" href="manifest.json">
+   <link rel="icon" type="image/png" href="icon-512.png">
+   <link rel="apple-touch-icon" href="icon-512.png">
   
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
@@ -752,30 +754,7 @@
       await handleSharedContent();
     });
 
-    // PWA Manifest
-    const manifestData = {
-      name: "ROMO",
-      short_name: "ROMO",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#0C0C0C",
-      theme_color: "#0C0C0C",
-      icons: [{
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%230C0C0C' width='512' height='512'/%3E%3Ctext fill='%23F3F0E7' font-size='180' font-family='monospace' font-weight='600' x='80' y='320'%3EROMO%3C/text%3E%3C/svg%3E",
-        sizes: "512x512",
-        type: "image/svg+xml"
-      }],
-      share_target: {
-        action: "/share",
-        method: "GET",
-        enctype: "application/x-www-form-urlencoded",
-        params: {
-          title: "title",
-          text: "text",
-          url: "url"
-        }
-      }
-    };
+    
 
     const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
     const manifestURL = URL.createObjectURL(manifestBlob);
