@@ -1,775 +1,1542 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0C0C0C">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>ROMO</title>
-  
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon-512.png">
-  <link rel="apple-touch-icon" href="icon-512.png">
-  
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-  
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0C0C0C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ROMO</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 
-    :root {
-      --carbon: #0C0C0C;
-      --paper: #F3F0E7;
-      --structure: #161616;
-      --dim: #8A8A8A;
-      --faint: #555555;
-      --line: #2A2A2A;
-      --fd: 'Space Grotesk', sans-serif;
-      --fm: 'DM Mono', monospace;
-    }
+<style>
+/* ══════════════════════════════════════
+   RESET + ROOT
+══════════════════════════════════════ */
+*, *::before, *::after {
+  margin: 0; padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+:root {
+  --carbon:    #0C0C0C;
+  --paper:     #F3F0E7;
+  --structure: #161616;
+  --dim:       #8A8A8A;
+  --faint:     #555555;
+  --line:      #2A2A2A;
+  --line2:     #3D3D3D;
+  --amber:     #D4B418;
+  --amber-dim: rgba(212,180,24,0.35);
+  --red:       #E05555;
+  --fd: 'Space Grotesk', sans-serif;
+  --fm: 'DM Mono', monospace;
+}
 
-    body {
-      background: var(--carbon);
-      color: var(--paper);
-      font-family: var(--fd);
-      font-size: 16px;
-      line-height: 1.6;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
 
-    .app-s {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      background: var(--carbon);
-      color: var(--paper);
-    }
+body {
+  background: var(--carbon);
+  color: var(--paper);
+  font-family: var(--fd);
+  font-size: 16px;
+  line-height: 1.6;
+  overscroll-behavior: none;
+}
 
-    .sb {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 18px 5px;
-      font-family: var(--fm);
-      font-size: 10px;
-      color: var(--dim);
-      flex-shrink: 0;
-    }
+/* ══════════════════════════════════════
+   SCREEN SYSTEM
+══════════════════════════════════════ */
+.screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--carbon);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.28s ease, transform 0.28s ease;
+  overflow: hidden;
+}
+.screen.active {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.screen.exit {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
 
-    .sc-body {
-      flex: 1;
-      padding: 0 18px 18px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-    }
+/* ══════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════ */
+.sb {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px 6px;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: var(--dim);
+  flex-shrink: 0;
+  letter-spacing: 0.06em;
+}
+.sb-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ble-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: background 0.4s;
+}
+.ble-dot.on  { background: var(--amber); }
+.ble-dot.err { background: var(--red); }
 
-    .splash-center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
+/* ══════════════════════════════════════
+   BODY AREA
+══════════════════════════════════════ */
+.sc-body {
+  flex: 1;
+  padding: 0 20px 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.sc-body.scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 
-    .app-title {
-      font-size: 28px;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      margin-bottom: 4px;
-    }
+/* ══════════════════════════════════════
+   TYPOGRAPHY HELPERS
+══════════════════════════════════════ */
+.app-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin-bottom: 3px;
+  line-height: 1.1;
+}
+.app-sub {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+.mono-label {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.amber-label {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.divider {
+  height: 1px;
+  background: var(--line);
+  margin: 14px 0;
+  flex-shrink: 0;
+}
 
-    .app-sub {
-      font-size: 13px;
-      color: var(--dim);
-    }
+/* ══════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════ */
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--paper);
+  color: var(--carbon);
+  border: none;
+  padding: 14px 20px;
+  font-family: var(--fd);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+  margin-bottom: 8px;
+  border-radius: 0;
+  -webkit-appearance: none;
+}
+.btn-primary:active { opacity: 0.75; transform: scale(0.99); }
+.btn-primary:disabled {
+  background: var(--line2);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.btn-ghost {
+  display: block;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  padding: 12px 20px;
+  font-family: var(--fd);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  margin-bottom: 8px;
+  border-radius: 0;
+  -webkit-appearance: none;
+}
+.btn-ghost:active { border-color: var(--line2); }
 
-    .mono-label {
-      font-family: var(--fm);
-      font-size: 9px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--faint);
-    }
+/* ══════════════════════════════════════
+   CARDS / BLOCKS
+══════════════════════════════════════ */
+.card {
+  background: var(--structure);
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.card-amber {
+  background: var(--structure);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--amber);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
 
-    .app-divider {
-      height: 1px;
-      background: var(--line);
-      margin: 12px 0;
-      flex-shrink: 0;
-    }
+/* ══════════════════════════════════════
+   SPLASH — S01
+══════════════════════════════════════ */
+#splash .sc-body {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.splash-logo {
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.splash-logo span { color: var(--amber); }
+.splash-tagline {
+  font-size: 13px;
+  color: var(--dim);
+  letter-spacing: 0.02em;
+}
+.splash-loader {
+  margin-top: 32px;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.2} 50%{opacity:1} }
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes blink  { 0%,100%{opacity:0.15} 50%{opacity:0.7} }
+@keyframes scan-in { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 
-    .btn-primary {
-      background: var(--paper);
-      color: var(--carbon);
-      border: none;
-      padding: 13px 20px;
-      font-family: var(--fd);
-      font-size: 14px;
-      font-weight: 500;
-      width: 100%;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      margin-bottom: 8px;
-    }
+/* ══════════════════════════════════════
+   ONBOARDING — S02 / S03
+══════════════════════════════════════ */
+.onboard-header {
+  padding-top: 10px;
+  margin-bottom: 18px;
+}
+.progress-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+.pb-seg {
+  height: 2px;
+  flex: 1;
+  background: var(--line);
+  transition: background 0.3s;
+}
+.pb-seg.done { background: var(--amber); }
 
-    .btn-primary:active {
-      opacity: 0.7;
-    }
+.step-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.step-num {
+  width: 22px; height: 22px;
+  border: 1px solid var(--line2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--fm); font-size: 10px; color: var(--dim);
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-body .step-title { font-size: 13px; line-height: 1.4; color: var(--paper); }
+.step-body .step-sub   { font-family: var(--fm); font-size: 9px; color: var(--faint); margin-top: 2px; }
+.step-arrow {
+  font-family: var(--fm); font-size: 9px; color: var(--line2);
+  padding-left: 36px; margin-bottom: 12px;
+}
 
-    .btn-primary:disabled {
-      background: #333;
-      color: #666;
-      cursor: not-allowed;
-    }
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.action-cell {
+  border: 1px solid var(--line);
+  padding: 10px 8px;
+  text-align: center;
+}
+.action-icon { font-size: 14px; margin-bottom: 4px; }
+.action-name { font-size: 12px; font-weight: 500; }
+.action-desc { font-family: var(--fm); font-size: 8px; color: var(--faint); margin-top: 2px; }
 
-    .btn-ghost {
-      background: none;
-      border: 1px solid var(--line);
-      color: var(--dim);
-      padding: 11px 20px;
-      font-family: var(--fd);
-      font-size: 13px;
-      width: 100%;
-      cursor: pointer;
-      margin-top: 6px;
-    }
+.view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.view-cell {
+  border: 1px solid var(--line);
+  padding: 10px;
+  text-align: center;
+}
+.view-cell .vc-title { font-size: 12px; margin-bottom: 2px; }
+.view-cell .vc-sub   { font-family: var(--fm); font-size: 8px; color: var(--faint); }
 
-    .stat-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin: 12px 0;
-    }
+/* ══════════════════════════════════════
+   PAIRING — S04
+══════════════════════════════════════ */
+.scan-anim {
+  text-align: center;
+  padding: 24px 0 16px;
+  position: relative;
+}
+.scan-rings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px; height: 72px;
+  position: relative;
+  margin-bottom: 12px;
+}
+.sr { position: absolute; border-radius: 50%; border: 1px solid var(--amber-dim); }
+.sr1 { width: 24px; height: 24px; animation: ring 2.4s ease-out infinite 0s; }
+.sr2 { width: 40px; height: 40px; animation: ring 2.4s ease-out infinite 0.4s; }
+.sr3 { width: 58px; height: 58px; animation: ring 2.4s ease-out infinite 0.8s; }
+.sr-core { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); position: absolute; }
+@keyframes ring {
+  0%   { opacity: 0; transform: scale(0.6); }
+  30%  { opacity: 0.6; }
+  100% { opacity: 0; transform: scale(1.15); }
+}
+.scan-status {
+  font-family: var(--fm); font-size: 9px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);
+  animation: pulse 2s infinite;
+}
+.found-card {
+  background: var(--structure);
+  border: 1px solid var(--amber);
+  padding: 14px 16px;
+  margin: 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.found-card.visible { opacity: 1; }
+.found-name { font-size: 15px; font-weight: 500; }
+.found-sub  { font-family: var(--fm); font-size: 9px; color: var(--faint); margin-top: 2px; }
+.found-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
 
-    .stat-box {
-      border: 1px solid var(--line);
-      padding: 12px;
-      text-align: center;
-    }
+/* ══════════════════════════════════════
+   CONNECTED — S05
+══════════════════════════════════════ */
+.connected-center {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px; text-align: center;
+}
+.check-box {
+  width: 52px; height: 52px;
+  border: 1px solid var(--amber);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--amber); margin-bottom: 10px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin: 14px 0;
+}
+.stat-box {
+  border: 1px solid var(--line);
+  padding: 12px; text-align: center;
+}
+.stat-n { font-size: 26px; font-weight: 600; margin-bottom: 3px; }
+.stat-l { font-family: var(--fm); font-size: 8px; color: var(--faint); letter-spacing: 0.1em; text-transform: uppercase; }
 
-    .stat-box .n {
-      font-size: 24px;
-      font-weight: 500;
-      margin-bottom: 3px;
-    }
+/* ══════════════════════════════════════
+   QUEUE — S06 / S07
+══════════════════════════════════════ */
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  margin-bottom: 4px;
+}
+.sync-badge {
+  font-family: var(--fm); font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--faint); transition: color 0.3s;
+}
+.sync-badge.syncing { color: var(--amber); }
+.sync-badge.error   { color: var(--red); }
 
-    .stat-box .l {
-      font-family: var(--fm);
-      font-size: 8px;
-      color: var(--faint);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
+.tabs-row {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px; flex-shrink: 0;
+}
+.app-tab {
+  flex: 1; padding: 9px 6px;
+  font-family: var(--fm); font-size: 9px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); text-align: center;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.app-tab.cur { color: var(--paper); border-bottom-color: var(--paper); }
 
-    .queue-item {
-      padding: 12px 0;
-      border-bottom: 1px solid #1a1a1a;
-      flex-shrink: 0;
-    }
+.filter-row {
+  display: flex; gap: 6px;
+  margin-bottom: 12px; flex-shrink: 0;
+  overflow-x: auto; padding-bottom: 2px;
+}
+.filter-row::-webkit-scrollbar { display: none; }
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  font-family: var(--fm); font-size: 9px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--faint); white-space: nowrap;
+  cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.pill.active {
+  background: var(--paper); color: var(--carbon);
+  border-color: var(--paper);
+}
 
-    .qi-type {
-      font-family: var(--fm);
-      font-size: 8px;
-      letter-spacing: 0.1em;
-      color: var(--faint);
-      margin-bottom: 3px;
-    }
+.queue-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.queue-list::-webkit-scrollbar { display: none; }
 
-    .qi-title {
-      font-size: 13px;
-      line-height: 1.4;
-      margin-bottom: 3px;
-      color: var(--paper);
-    }
+.queue-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #1a1a1a;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.queue-item:active { background: rgba(255,255,255,0.02); }
+.qi-type  { font-family: var(--fm); font-size: 8px; letter-spacing: 0.1em; color: var(--faint); margin-bottom: 3px; }
+.qi-title { font-size: 13px; line-height: 1.4; margin-bottom: 3px; color: var(--paper); }
+.qi-meta  { font-family: var(--fm); font-size: 8px; color: var(--faint); }
+.qi-status {
+  display: inline-block; margin-left: 8px;
+  font-family: var(--fm); font-size: 7px; letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.qi-status.sent   { color: var(--amber); }
+.qi-status.failed { color: var(--red); }
 
-    .qi-meta {
-      font-family: var(--fm);
-      font-size: 8px;
-      color: var(--faint);
-    }
+.queue-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+}
+.empty-icon { font-size: 32px; opacity: 0.2; margin-bottom: 4px; }
+.empty-title { font-size: 14px; }
+.empty-sub   { font-size: 12px; color: var(--faint); text-align: center; line-height: 1.6; }
 
-    .tabs-row {
-      display: flex;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
+.queue-footer {
+  padding: 10px 0 0; text-align: center; flex-shrink: 0;
+}
 
-    .app-tab {
-      flex: 1;
-      padding: 10px 6px;
-      font-family: var(--fm);
-      font-size: 9px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--faint);
-      text-align: center;
-      border-bottom: 1px solid transparent;
-      margin-bottom: -1px;
-      cursor: pointer;
-    }
+/* ══════════════════════════════════════
+   ITEM DETAIL — S08
+══════════════════════════════════════ */
+.detail-back {
+  font-family: var(--fm); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--dim);
+  padding-top: 10px; margin-bottom: 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+}
+.detail-back::before { content: '←'; color: var(--faint); }
+.detail-thumb {
+  background: var(--structure); border: 1px solid var(--line);
+  aspect-ratio: 16/9;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.thumb-play { font-size: 24px; opacity: 0.25; }
+.thumb-dur  { font-family: var(--fm); font-size: 8px; color: var(--faint); margin-top: 4px; }
+.detail-status {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.ds-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--amber); flex-shrink: 0; }
 
-    .app-tab.cur {
-      color: var(--paper);
-      border-bottom-color: var(--paper);
-    }
+/* ══════════════════════════════════════
+   SETTINGS — S11
+══════════════════════════════════════ */
+.setting-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0; border-bottom: 1px solid #1a1a1a; flex-shrink: 0;
+}
+.setting-label { font-size: 13px; color: var(--paper); }
+.setting-val   { font-family: var(--fm); font-size: 11px; color: var(--dim); }
 
-    .big-check {
-      width: 44px;
-      height: 44px;
-      border: 1px solid var(--line);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      margin-bottom: 12px;
-    }
+.storage-bar { display: flex; gap: 1px; margin: 6px 0; }
+.storage-seg { flex: 1; height: 3px; background: var(--line); transition: background 0.3s; }
+.storage-seg.filled { background: var(--paper); }
 
-    @keyframes scan {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 1; }
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .scanning-anim {
-      font-family: var(--fm);
-      font-size: 20px;
-      color: var(--paper);
-      text-align: center;
-      animation: scan 2s infinite;
-      margin: 12px 0;
-    }
-
-    .screen {
-      display: none;
-    }
-
-    .screen.active {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-    .setting-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #1a1a1a;
-      flex-shrink: 0;
-    }
-
-    .setting-label {
-      font-size: 13px;
-      color: var(--paper);
-    }
-
-    .setting-val {
-      font-family: var(--fm);
-      font-size: 11px;
-      color: var(--dim);
-    }
-  </style>
+/* ══════════════════════════════════════
+   TOAST NOTIFICATION
+══════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(24px);
+  background: var(--structure); border: 1px solid var(--line);
+  padding: 10px 20px;
+  font-family: var(--fm); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--paper); pointer-events: none; opacity: 0;
+  transition: all 0.3s; white-space: nowrap; z-index: 1000;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.amber { border-color: var(--amber); color: var(--amber); }
+#toast.red   { border-color: var(--red);   color: var(--red); }
+</style>
 </head>
 <body>
 
-  <!-- S01: SPLASH -->
-  <div class="screen active" id="splash">
-    <div class="sb"><span id="time">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div class="splash-center">
-        <div class="app-title">ROMO</div>
-        <div class="app-sub">Relief of Missing Out</div>
-        <div class="scanning-anim" style="margin-top:24px">Loading</div>
+<!-- ══════════════════════════════════════
+     S01 · SPLASH
+══════════════════════════════════════ -->
+<div class="screen active" id="splash">
+  <div class="sb">
+    <span id="t-splash"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-splash"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body" style="align-items:center;justify-content:center;gap:6px">
+    <div class="splash-logo">ROM<span>O</span></div>
+    <div class="splash-tagline">Relief of Missing Out</div>
+    <div class="splash-loader" id="splash-loader">Initialising</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S02 · ONBOARDING A — App saves
+══════════════════════════════════════ -->
+<div class="screen" id="onboard-a">
+  <div class="sb">
+    <span id="t-oa"></span>
+    <div class="sb-right"><span>●●●</span></div>
+  </div>
+  <div class="sc-body" style="display:flex;flex-direction:column">
+    <div class="progress-bar">
+      <div class="pb-seg done"></div>
+      <div class="pb-seg"></div>
+      <div class="pb-seg"></div>
+    </div>
+    <div class="onboard-header">
+      <div class="mono-label" style="margin-bottom:6px">Step 1 of 3</div>
+      <div class="app-title" style="font-size:22px">App saves.<br>Device decides.</div>
+      <div class="app-sub" style="margin-top:4px">Save from anywhere. Decide on ROMO.</div>
+    </div>
+    <div class="divider"></div>
+    <div style="flex:1;overflow:hidden">
+      <div class="step-row">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <div class="step-title">Share content to ROMO</div>
+          <div class="step-sub">From any app on your phone</div>
+        </div>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step-row">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <div class="step-title">App syncs silently to device</div>
+          <div class="step-sub">Background · no action needed</div>
+        </div>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="step-row">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <div class="step-title">Pick up your ROMO device</div>
+          <div class="step-sub">Keep · Release · Archive — all on device</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="font-size:12px;color:var(--faint);line-height:1.6">
+        The app is your bridge.<br>Your ROMO device is the interface.
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding-top:12px">
+      <button class="btn-primary" onclick="showScreen('onboard-b')">Continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S03 · ONBOARDING B — Device controls
+══════════════════════════════════════ -->
+<div class="screen" id="onboard-b">
+  <div class="sb">
+    <span id="t-ob"></span>
+    <div class="sb-right"><span>●●●</span></div>
+  </div>
+  <div class="sc-body" style="display:flex;flex-direction:column">
+    <div class="progress-bar">
+      <div class="pb-seg done"></div>
+      <div class="pb-seg done"></div>
+      <div class="pb-seg"></div>
+    </div>
+    <div class="onboard-header">
+      <div class="mono-label" style="margin-bottom:6px">Step 2 of 3</div>
+      <div class="app-title" style="font-size:22px">Control lives<br>on the device.</div>
+      <div class="app-sub" style="margin-top:4px">All decisions happen on your ROMO.</div>
+    </div>
+    <div class="divider"></div>
+    <div style="flex:1;overflow:hidden">
+      <div class="mono-label" style="margin-bottom:10px">On the ROMO device you can</div>
+      <div class="action-grid">
+        <div class="action-cell">
+          <div class="action-icon">□</div>
+          <div class="action-name">Keep</div>
+          <div class="action-desc">Stays on device</div>
+        </div>
+        <div class="action-cell" style="border-color:var(--amber-dim)">
+          <div class="action-icon" style="color:var(--amber)">◎</div>
+          <div class="action-name">Release</div>
+          <div class="action-desc">Deleted · ritual</div>
+        </div>
+        <div class="action-cell">
+          <div class="action-icon">⊡</div>
+          <div class="action-name">Archive</div>
+          <div class="action-desc">→ Personal</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="mono-label" style="margin-bottom:8px">This app only shows</div>
+      <div class="view-grid">
+        <div class="view-cell">
+          <div class="vc-title">Queue</div>
+          <div class="vc-sub">Pending · View only</div>
+        </div>
+        <div class="view-cell">
+          <div class="vc-title">Personal</div>
+          <div class="vc-sub">Archive · View only</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;padding-top:12px">
+      <button class="btn-primary" onclick="showScreen('pairing')">Connect Device →</button>
+      <button class="btn-ghost" onclick="showScreen('queue')">Skip for now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S04 · PAIRING
+══════════════════════════════════════ -->
+<div class="screen" id="pairing">
+  <div class="sb">
+    <span id="t-pair"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-pair"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body" style="display:flex;flex-direction:column">
+    <div class="progress-bar">
+      <div class="pb-seg done"></div>
+      <div class="pb-seg done"></div>
+      <div class="pb-seg done"></div>
+    </div>
+    <div class="onboard-header">
+      <div class="mono-label" style="margin-bottom:6px">Step 3 of 3</div>
+      <div class="app-title" style="font-size:22px">Connect your<br>ROMO device.</div>
+    </div>
+
+    <div class="scan-anim">
+      <div class="scan-rings">
+        <div class="sr sr3"></div>
+        <div class="sr sr2"></div>
+        <div class="sr sr1"></div>
+        <div class="sr-core"></div>
+      </div>
+      <div class="scan-status" id="scan-status">Searching</div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--faint);line-height:1.7;margin-bottom:16px">
+      Power on your ROMO device<br>to begin Bluetooth pairing.
+    </div>
+
+    <div class="found-card" id="found-card">
+      <div>
+        <div class="found-name" id="found-name">ROMO</div>
+        <div class="found-sub">BLE Device · Ready to pair</div>
+      </div>
+      <div class="found-dot"></div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div style="flex-shrink:0">
+      <button class="btn-primary" id="scan-btn" onclick="startScan()">
+        Scan for ROMO Device
+      </button>
+      <button class="btn-ghost" onclick="showScreen('queue')">Use without device</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S05 · CONNECTED
+══════════════════════════════════════ -->
+<div class="screen" id="connected">
+  <div class="sb">
+    <span id="t-conn"></span>
+    <div class="sb-right">
+      <div class="ble-dot on" id="bd-conn"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body">
+    <div class="connected-center">
+      <div class="check-box">✓</div>
+      <div class="app-title" style="font-size:22px;text-align:center">Device Connected</div>
+      <div class="mono-label" id="conn-device-name">ROMO · Online</div>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="stat-n" id="conn-queue-n">0</div>
+          <div class="stat-l">In Queue</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-n" id="conn-sent-n">0</div>
+          <div class="stat-l">Sent to Device</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--faint);line-height:1.7;margin-bottom:20px">
+        Share content from any app.<br>Your device controls all decisions.
+      </div>
+      <button class="btn-primary" onclick="showScreen('queue')" style="width:100%">Go to Queue</button>
+      <button class="btn-ghost" onclick="showScreen('settings')" style="width:100%">Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S06 / S07 · QUEUE
+══════════════════════════════════════ -->
+<div class="screen" id="queue">
+  <div class="sb">
+    <span id="t-q"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-q"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body">
+    <div class="queue-header">
+      <div class="app-title" style="font-size:22px">ROMO</div>
+      <div class="sync-badge" id="sync-badge">SYNCED</div>
+    </div>
+    <div class="tabs-row">
+      <div class="app-tab cur" onclick="switchTab('queue')">Queue · <span id="q-count-tab">0</span></div>
+      <div class="app-tab" onclick="switchTab('personal')">Personal</div>
+      <div class="app-tab" onclick="showScreen('settings')">Settings</div>
+    </div>
+
+    <!-- Filter pills -->
+    <div class="filter-row" id="filter-row">
+      <div class="pill active" onclick="setFilter('all', this)">All</div>
+      <div class="pill" onclick="setFilter('V', this)">Video · <span id="fv-count">0</span></div>
+      <div class="pill" onclick="setFilter('I', this)">Image · <span id="fi-count">0</span></div>
+      <div class="pill" onclick="setFilter('A', this)">Article · <span id="fa-count">0</span></div>
+    </div>
+
+    <!-- Empty state -->
+    <div class="queue-empty" id="q-empty">
+      <div class="empty-icon">📤</div>
+      <div class="empty-title">Queue is clear</div>
+      <div class="empty-sub">Share anything from any app<br>to add to ROMO</div>
+      <div class="divider" style="width:100%"></div>
+      <div class="mono-label" style="text-align:center">Tap Share → ROMO from any app</div>
+    </div>
+
+    <!-- Queue list -->
+    <div class="queue-list" id="q-list" style="display:none"></div>
+
+    <!-- Footer -->
+    <div class="queue-footer">
+      <div class="mono-label">Decisions happen on your ROMO device</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     S08 · ITEM DETAIL
+══════════════════════════════════════ -->
+<div class="screen" id="item-detail">
+  <div class="sb">
+    <span id="t-detail"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-detail"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body scroll">
+    <div class="detail-back" onclick="showScreen('queue')">Queue</div>
+    <div class="mono-label" id="d-pos" style="margin-bottom:4px">Queue · 1 of 12</div>
+    <div class="amber-label" style="margin-bottom:12px">VIEW ONLY</div>
+    <div class="detail-thumb" id="d-thumb">
+      <div style="text-align:center">
+        <div class="thumb-play" id="d-icon">▶</div>
+        <div class="thumb-dur" id="d-dur"></div>
+      </div>
+    </div>
+    <div class="mono-label" id="d-type" style="margin-bottom:3px">Video</div>
+    <div style="font-size:16px;line-height:1.4;margin-bottom:6px;font-weight:500" id="d-title"></div>
+    <div class="mono-label" id="d-meta" style="margin-bottom:14px"></div>
+    <div class="divider"></div>
+    <div class="card-amber">
+      <div class="detail-status">
+        <div class="ds-dot" id="d-status-dot"></div>
+        <div class="mono-label" id="d-status-text">Synced to device</div>
+      </div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.6">
+        Use your ROMO to Keep · Release · Archive<br>
+        Rotate to browse · Click to select
       </div>
     </div>
   </div>
+</div>
 
-  <!-- S04: DEVICE PAIRING -->
-  <div class="screen" id="pairing">
-    <div class="sb"><span id="time2">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div style="padding-top:12px">
-        <div class="mono-label" style="margin-bottom:4px">Connect Device</div>
-        <div class="app-title" style="font-size:20px;margin-bottom:18px">Find your ROMO</div>
-        <div class="scanning-anim" style="font-size:28px;letter-spacing:.3em">~ ~ ~</div>
-        <div style="text-align:center;font-size:12px;color:var(--faint);margin-bottom:18px;line-height:1.6">
-          Turn on ROMO device<br>to begin pairing
-        </div>
-        <div class="app-divider"></div>
-        <button class="btn-primary" id="scanBtn">Scan for ROMO Device</button>
-      </div>
+<!-- ══════════════════════════════════════
+     S09 · PERSONAL ARCHIVE
+══════════════════════════════════════ -->
+<div class="screen" id="personal">
+  <div class="sb">
+    <span id="t-pers"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-pers"></div>
+      <span>●●●</span>
     </div>
   </div>
-
-  <!-- S05: PAIRED SUCCESSFULLY -->
-  <div class="screen" id="connected">
-    <div class="sb"><span id="time3">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div class="splash-center">
-        <div class="big-check">✓</div>
-        <div class="app-title" style="font-size:20px;text-align:center">Device Connected</div>
-        <div class="mono-label" style="text-align:center;margin-bottom:18px" id="deviceNameDisplay">ROMO · Online</div>
-        <div class="stat-row" style="width:100%">
-          <div class="stat-box">
-            <div class="n" id="queueCount">0</div>
-            <div class="l">In Queue</div>
-          </div>
-          <div class="stat-box">
-            <div class="n" id="sentCount">0</div>
-            <div class="l">Sent</div>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--faint);text-align:center;line-height:1.6;margin-bottom:16px">
-          Share content from any app.<br>Use your device to decide.
-        </div>
-        <button class="btn-primary" onclick="showScreen('queue')">Go to Queue</button>
-        <button class="btn-ghost" onclick="showScreen('settings')">Settings</button>
-      </div>
+  <div class="sc-body">
+    <div class="queue-header">
+      <div class="app-title" style="font-size:22px">ROMO</div>
+      <div class="sync-badge" id="pers-sync">SYNCED</div>
+    </div>
+    <div class="tabs-row">
+      <div class="app-tab" onclick="switchTab('queue')">Queue</div>
+      <div class="app-tab cur" onclick="switchTab('personal')">Personal · <span id="pers-count">0</span></div>
+      <div class="app-tab" onclick="showScreen('settings')">Settings</div>
+    </div>
+    <div class="mono-label" style="margin-bottom:12px">Your curated archive</div>
+    <div class="queue-list" id="pers-list"></div>
+    <div class="queue-empty" id="pers-empty" style="display:none">
+      <div class="empty-icon">🗂</div>
+      <div class="empty-title">No archived items yet</div>
+      <div class="empty-sub">Use your ROMO device to archive<br>items from the queue</div>
+    </div>
+    <div class="queue-footer">
+      <div class="mono-label">Manage archive on your ROMO device</div>
     </div>
   </div>
+</div>
 
-  <!-- S06/S07: QUEUE -->
-  <div class="screen" id="queue">
-    <div class="sb"><span id="time4">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-bottom:4px">
-        <div class="app-title" style="font-size:20px">ROMO</div>
-        <div class="mono-label" id="syncStatus">SYNCED</div>
-      </div>
-      <div class="tabs-row">
-        <div class="app-tab cur">Queue · <span id="queueCountTab">0</span></div>
-        <div class="app-tab" onclick="showScreen('settings')">Settings</div>
-      </div>
-      
-      <div id="queueEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px">
-        <div style="font-size:28px;opacity:.3">📤</div>
-        <div style="font-size:14px;text-align:center">Queue is clear</div>
-        <div style="font-size:12px;color:var(--faint);text-align:center;line-height:1.6">
-          Share anything from any app<br>to add to ROMO
-        </div>
-        <div class="app-divider" style="width:100%"></div>
-        <div class="mono-label" style="text-align:center">Tap Share → ROMO from any app</div>
-      </div>
-
-      <div id="queueList" style="flex:1;overflow:auto;display:none"></div>
-      
-      <div style="padding:8px 0;text-align:center;flex-shrink:0">
-        <div class="mono-label">Decisions happen on your ROMO device</div>
-      </div>
+<!-- ══════════════════════════════════════
+     S10 · SYNCING
+══════════════════════════════════════ -->
+<div class="screen" id="syncing">
+  <div class="sb">
+    <span id="t-sync"></span>
+    <div class="sb-right">
+      <div class="ble-dot on"></div>
+      <span>●●●</span>
     </div>
   </div>
-
-  <!-- S11: SETTINGS -->
-  <div class="screen" id="settings">
-    <div class="sb"><span id="time5">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div style="padding-top:12px">
-        <div class="app-title" style="font-size:20px;margin-bottom:12px">Settings</div>
-        
-        <div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:13px;margin-bottom:2px" id="settingsDeviceName">Not connected</div>
-              <div class="mono-label">Tap to reconnect</div>
-            </div>
-            <div id="connectionDot" style="width:7px;height:7px;background:#f66;border-radius:50%"></div>
-          </div>
-        </div>
-
-        <div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
-          <div class="mono-label" style="margin-bottom:3px">App Status</div>
-          <div style="font-size:15px;margin-bottom:6px"><span id="queueTotal">0</span> items in queue</div>
-          <div style="font-size:15px;margin-bottom:6px"><span id="sentTotal">0</span> items sent</div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label">Connection</span>
-          <span class="setting-val" id="connectionStatus">Disconnected</span>
-        </div>
-
-        <div style="margin-top:20px">
-          <button class="btn-primary" id="reconnectBtn">Reconnect Device</button>
-          <button class="btn-ghost" onclick="showScreen('queue')">Back to Queue</button>
-        </div>
-      </div>
+  <div class="sc-body" style="align-items:center;justify-content:center;gap:10px;text-align:center">
+    <div style="font-size:36px;animation:spin 1.8s linear infinite;margin-bottom:4px">⟳</div>
+    <div class="mono-label">Syncing to ROMO device</div>
+    <div style="font-size:22px;font-weight:600" id="sync-progress">0 / 0</div>
+    <div class="mono-label" style="margin-bottom:16px">Transferring</div>
+    <div class="stat-grid" style="width:100%">
+      <div class="stat-box"><div class="stat-n" id="sv-n">0</div><div class="stat-l">Video</div></div>
+      <div class="stat-box"><div class="stat-n" id="si-n">0</div><div class="stat-l">Image</div></div>
+    </div>
+    <div class="stat-grid" style="width:100%;margin-top:-6px">
+      <div class="stat-box"><div class="stat-n" id="sa-n">0</div><div class="stat-l">Article</div></div>
+      <div class="stat-box"><div class="stat-n">—</div><div class="stat-l">Silent sync</div></div>
     </div>
   </div>
+</div>
 
-  <script>
-    // ════════════════════════════════════════════════════════════
-    // BLE CONSTANTS
-    // ════════════════════════════════════════════════════════════
-    const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
-    const CHAR_UUID_RX = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
-    const CHAR_UUID_TX = 'beb5483f-36e1-4688-b7f5-ea07361b26a8';
+<!-- ══════════════════════════════════════
+     S11 · SETTINGS
+══════════════════════════════════════ -->
+<div class="screen" id="settings">
+  <div class="sb">
+    <span id="t-set"></span>
+    <div class="sb-right">
+      <div class="ble-dot" id="bd-set"></div>
+      <span>●●●</span>
+    </div>
+  </div>
+  <div class="sc-body scroll">
+    <div style="padding-top:10px;margin-bottom:16px">
+      <div class="app-title" style="font-size:22px">Settings</div>
+    </div>
 
-    // ════════════════════════════════════════════════════════════
-    // STATE
-    // ════════════════════════════════════════════════════════════
-    let bleDevice = null;
-    let bleServer = null;
-    let charRX = null;
-    let charTX = null;
-    let queue = [];
-    let sentCount = 0;
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 3;
+    <!-- Device block -->
+    <div class="card" id="settings-device-card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:2px" id="set-device-name">Not connected</div>
+          <div class="mono-label" id="set-device-sub">Tap to connect</div>
+        </div>
+        <div id="set-conn-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);flex-shrink:0"></div>
+      </div>
+    </div>
 
-    // ════════════════════════════════════════════════════════════
-    // SCREEN NAVIGATION
-    // ════════════════════════════════════════════════════════════
-    function showScreen(screenId) {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-      updateUI();
+    <!-- Storage block -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="mono-label" style="margin-bottom:4px">Queue Storage</div>
+      <div style="font-size:15px;margin-bottom:8px"><span id="set-queue-n">0</span> items in queue</div>
+      <div class="storage-bar" id="storage-bar"></div>
+      <div class="mono-label" style="margin-top:4px">Max 50 items</div>
+    </div>
+
+    <!-- Settings rows -->
+    <div class="setting-row">
+      <span class="setting-label">Bluetooth</span>
+      <span class="setting-val" id="set-ble-status">Disconnected</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Sent to device</span>
+      <span class="setting-val" id="set-sent">0 items</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Device name</span>
+      <span class="setting-val">ROMO</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Protocol</span>
+      <span class="setting-val">BLE · Pipe-delimited</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">App version</span>
+      <span class="setting-val">v1.0</span>
+    </div>
+
+    <div style="margin-top:20px">
+      <button class="btn-primary" id="set-connect-btn" onclick="startScan()">Connect / Reconnect Device</button>
+      <button class="btn-ghost" onclick="showScreen('queue')">← Back to Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TOAST
+══════════════════════════════════════ -->
+<div id="toast"></div>
+
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ════════════════════════════════════════
+// BLE CONSTANTS (must match ESP32 firmware)
+// ════════════════════════════════════════
+const SERVICE_UUID   = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+const CHAR_UUID_RX   = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';  // phone → ROMO
+const CHAR_UUID_TX   = 'beb5483f-36e1-4688-b7f5-ea07361b26a8';  // ROMO  → phone
+
+// ════════════════════════════════════════
+// APP STATE
+// ════════════════════════════════════════
+let bleDevice      = null;
+let bleServer      = null;
+let charRX         = null;
+let charTX         = null;
+let isBleConnected = false;
+let reconnectTimer = null;
+let reconnectCount = 0;
+const MAX_RECONNECT = 5;
+
+let queue        = [];    // { id, category, title, source, time, url, status }
+let personal     = [];    // archived items (demo seed)
+let sentCount    = 0;
+let currentFilter = 'all';
+let detailItem   = null;
+let isSending    = false;
+
+// ════════════════════════════════════════
+// SCREEN NAVIGATION
+// ════════════════════════════════════════
+let currentScreen = 'splash';
+
+function showScreen(id) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (!next || id === currentScreen) return;
+
+  prev.classList.add('exit');
+  setTimeout(() => { prev.classList.remove('active', 'exit'); }, 300);
+
+  next.classList.add('active');
+  currentScreen = id;
+  updateUI();
+}
+
+// ════════════════════════════════════════
+// TIME UPDATES
+// ════════════════════════════════════════
+function updateAllTimes() {
+  const t = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+  document.querySelectorAll('[id^="t-"]').forEach(el => el.textContent = t);
+}
+
+// ════════════════════════════════════════
+// BLE DOT SYNC
+// ════════════════════════════════════════
+function updateBleDots() {
+  document.querySelectorAll('[id^="bd-"]').forEach(dot => {
+    dot.className = 'ble-dot' + (isBleConnected ? ' on' : '');
+  });
+}
+
+// ════════════════════════════════════════
+// FULL UI UPDATE
+// ════════════════════════════════════════
+function updateUI() {
+  updateAllTimes();
+  updateBleDots();
+
+  // Count helpers
+  const total   = queue.length;
+  const vCount  = queue.filter(i => i.category === 'V').length;
+  const imgCount= queue.filter(i => i.category === 'I').length;
+  const aCount  = queue.filter(i => i.category === 'A').length;
+
+  // Queue tab
+  document.getElementById('q-count-tab').textContent = total;
+  document.getElementById('fv-count').textContent     = vCount;
+  document.getElementById('fi-count').textContent     = imgCount;
+  document.getElementById('fa-count').textContent     = aCount;
+
+  // Connected screen
+  document.getElementById('conn-queue-n').textContent = total;
+  document.getElementById('conn-sent-n').textContent  = sentCount;
+  if (bleDevice && isBleConnected) {
+    document.getElementById('conn-device-name').textContent = (bleDevice.name || 'ROMO') + ' · Online';
+  }
+
+  // Queue render
+  renderQueue();
+
+  // Sync badge
+  const sb = document.getElementById('sync-badge');
+  if (sb) {
+    if (isSending) { sb.textContent = 'SYNCING'; sb.className = 'sync-badge syncing'; }
+    else if (!isBleConnected && total > 0) { sb.textContent = 'OFFLINE'; sb.className = 'sync-badge error'; }
+    else { sb.textContent = 'SYNCED'; sb.className = 'sync-badge'; }
+  }
+
+  // Settings
+  const sdn = document.getElementById('set-device-name');
+  const sds = document.getElementById('set-device-sub');
+  const scd = document.getElementById('set-conn-dot');
+  const sbs = document.getElementById('set-ble-status');
+  if (sdn) {
+    if (bleDevice && isBleConnected) {
+      sdn.textContent = (bleDevice.name || 'ROMO') + ' · Connected';
+      if (sds) sds.textContent = 'BLE · Active';
+      if (scd) scd.style.background = 'var(--amber)';
+      if (sbs) sbs.textContent = 'Connected';
+    } else {
+      sdn.textContent = 'Not connected';
+      if (sds) sds.textContent = 'Tap Connect to pair';
+      if (scd) scd.style.background = 'var(--red)';
+      if (sbs) sbs.textContent = 'Disconnected';
     }
+  }
+  if (document.getElementById('set-queue-n'))
+    document.getElementById('set-queue-n').textContent = total;
+  if (document.getElementById('set-sent'))
+    document.getElementById('set-sent').textContent = sentCount + ' items';
 
-    // ════════════════════════════════════════════════════════════
-    // UPDATE UI
-    // ════════════════════════════════════════════════════════════
-    function updateUI() {
-      updateTime();
-      
-      document.getElementById('queueCount').textContent = queue.length;
-      document.getElementById('queueCountTab').textContent = queue.length;
-      document.getElementById('queueTotal').textContent = queue.length;
-      document.getElementById('sentCount').textContent = sentCount;
-      document.getElementById('sentTotal').textContent = sentCount;
-
-      if (queue.length === 0) {
-        document.getElementById('queueEmpty').style.display = 'flex';
-        document.getElementById('queueList').style.display = 'none';
-      } else {
-        document.getElementById('queueEmpty').style.display = 'none';
-        document.getElementById('queueList').style.display = 'block';
-        renderQueue();
-      }
-
-      if (bleDevice && bleDevice.gatt.connected) {
-        const name = bleDevice.name || 'ROMO';
-        document.getElementById('deviceNameDisplay').textContent = `${name} · Online`;
-        document.getElementById('settingsDeviceName').textContent = `${name} · Connected`;
-        document.getElementById('connectionStatus').textContent = 'Connected';
-        document.getElementById('connectionDot').style.background = 'var(--paper)';
-      } else {
-        document.getElementById('settingsDeviceName').textContent = 'Not connected';
-        document.getElementById('connectionStatus').textContent = 'Disconnected';
-        document.getElementById('connectionDot').style.background = '#f66';
-      }
+  // Storage bar
+  const bar = document.getElementById('storage-bar');
+  if (bar) {
+    bar.innerHTML = '';
+    for (let i = 0; i < 50; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'storage-seg' + (i < total ? ' filled' : '');
+      bar.appendChild(seg);
     }
+  }
 
-    function updateTime() {
-      const now = new Date();
-      const time = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
-      document.querySelectorAll('[id^="time"]').forEach(el => el.textContent = time);
+  // Personal
+  renderPersonal();
+  const pc = document.getElementById('pers-count');
+  if (pc) pc.textContent = personal.length;
+}
+
+// ════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════
+function switchTab(tab) {
+  if (tab === 'queue')    showScreen('queue');
+  if (tab === 'personal') showScreen('personal');
+}
+
+// ════════════════════════════════════════
+// FILTER
+// ════════════════════════════════════════
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('#filter-row .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderQueue();
+}
+
+// ════════════════════════════════════════
+// RENDER QUEUE
+// ════════════════════════════════════════
+const CAT_LABEL = { V: 'VIDEO', I: 'IMAGE', A: 'ARTICLE' };
+
+function renderQueue() {
+  const list  = document.getElementById('q-list');
+  const empty = document.getElementById('q-empty');
+  if (!list || !empty) return;
+
+  const filtered = currentFilter === 'all'
+    ? queue
+    : queue.filter(i => i.category === currentFilter);
+
+  if (filtered.length === 0) {
+    empty.style.display = 'flex';
+    list.style.display  = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display  = 'block';
+
+  list.innerHTML = filtered.map((item, idx) => {
+    let statusHtml = '';
+    if (item.status === 'sent')   statusHtml = '<span class="qi-status sent">Sent</span>';
+    if (item.status === 'failed') statusHtml = '<span class="qi-status failed">Failed</span>';
+    return `
+      <div class="queue-item" onclick="openDetail(${queue.indexOf(item)})">
+        <div class="qi-type">${CAT_LABEL[item.category] || 'ITEM'}${statusHtml}</div>
+        <div class="qi-title">${escHtml(item.title)}</div>
+        <div class="qi-meta">${escHtml(item.source)} · ${item.time}</div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// RENDER PERSONAL
+// ════════════════════════════════════════
+function renderPersonal() {
+  const list  = document.getElementById('pers-list');
+  const empty = document.getElementById('pers-empty');
+  if (!list || !empty) return;
+
+  if (personal.length === 0) {
+    list.style.display  = 'none';
+    empty.style.display = 'flex';
+    return;
+  }
+  list.style.display  = 'block';
+  empty.style.display = 'none';
+
+  list.innerHTML = personal.map(item => `
+    <div class="queue-item">
+      <div class="qi-type">${CAT_LABEL[item.category] || 'ITEM'} · ARCHIVED</div>
+      <div class="qi-title">${escHtml(item.title)}</div>
+      <div class="qi-meta">${escHtml(item.source)} · ${item.time}</div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════
+// ITEM DETAIL
+// ════════════════════════════════════════
+const ICONS = { V:'▶', I:'◼', A:'≡' };
+const DURS  = { V:'14:32', I:null, A:'12 min read' };
+
+function openDetail(idx) {
+  const item = queue[idx];
+  if (!item) return;
+  detailItem = item;
+
+  document.getElementById('d-pos').textContent   = `Queue · ${idx+1} of ${queue.length}`;
+  document.getElementById('d-type').textContent  = CAT_LABEL[item.category] || 'Item';
+  document.getElementById('d-title').textContent = item.title;
+  document.getElementById('d-meta').textContent  = `${item.source} · Saved ${item.time} · ${(item.url||'').split('/')[2]||''}`;
+  document.getElementById('d-icon').textContent  = ICONS[item.category] || '●';
+
+  const dur = document.getElementById('d-dur');
+  if (DURS[item.category]) { dur.textContent = DURS[item.category]; }
+  else { dur.textContent = ''; }
+
+  const dot  = document.getElementById('d-status-dot');
+  const text = document.getElementById('d-status-text');
+  if (item.status === 'sent') {
+    dot.style.background  = 'var(--amber)';
+    text.textContent = 'Synced to device';
+  } else if (item.status === 'failed') {
+    dot.style.background  = 'var(--red)';
+    text.textContent = 'Sync failed — will retry';
+  } else {
+    dot.style.background  = 'var(--faint)';
+    text.textContent = 'Pending sync';
+  }
+
+  showScreen('item-detail');
+}
+
+// ════════════════════════════════════════
+// CONTENT TYPE DETECTION
+// ════════════════════════════════════════
+function detectCategory(url) {
+  const u = (url || '').toLowerCase();
+  if (/youtube\.com|youtu\.be|vimeo\.com|twitch\.tv|dailymotion/.test(u)) return 'V';
+  if (/pinterest\.com|instagram\.com|are\.na|unsplash\.com|flickr\.com|\.(jpg|jpeg|png|gif|webp)$/.test(u)) return 'I';
+  return 'A';
+}
+
+function extractSource(url) {
+  try {
+    const domain = new URL(url).hostname.replace('www.', '');
+    const parts  = domain.split('.');
+    return parts.slice(0, -1).join('.').toUpperCase().substring(0, 16) || 'WEB';
+  } catch { return 'WEB'; }
+}
+
+function extractTitle(raw, url) {
+  if (raw && raw.trim()) return raw.trim().substring(0, 48);
+  try { return new URL(url).pathname.split('/').filter(Boolean).pop().replace(/-/g,' ').substring(0,48) || 'Shared content'; }
+  catch { return 'Shared content'; }
+}
+
+// ════════════════════════════════════════
+// SHARED CONTENT HANDLER (Web Share Target)
+// ════════════════════════════════════════
+async function handleSharedContent() {
+  const params = new URLSearchParams(window.location.search);
+  const rawTitle = params.get('title') || '';
+  const rawText  = params.get('text')  || '';
+  const rawUrl   = params.get('url')   || rawText;
+
+  if (!rawUrl) return false;
+
+  const url      = rawUrl.trim();
+  const category = detectCategory(url);
+  const source   = extractSource(url);
+  const title    = extractTitle(rawTitle, url);
+  const time     = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+
+  const item = { id: Date.now(), category, title, source, time, url, status: 'pending' };
+  queue.push(item);
+
+  // Clear URL params so back/refresh doesn't re-add
+  if (window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+
+  return true;
+}
+
+// ════════════════════════════════════════
+// BLE — CONNECT
+// ════════════════════════════════════════
+async function startScan() {
+  if (!navigator.bluetooth) {
+    toast('Bluetooth not supported in this browser', 'red');
+    return;
+  }
+
+  const btn = document.getElementById('scan-btn');
+  if (btn) { btn.textContent = 'Scanning…'; btn.disabled = true; }
+  document.getElementById('scan-status').textContent = 'Scanning';
+
+  try {
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ROMO' }],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
+
+    await connectGatt();
+
+    document.getElementById('found-name').textContent = bleDevice.name || 'ROMO';
+    document.getElementById('found-card').classList.add('visible');
+    document.getElementById('scan-status').textContent = 'Connected';
+    reconnectCount = 0;
+
+    updateUI();
+    setTimeout(() => showScreen('connected'), 600);
+
+  } catch (err) {
+    console.warn('BLE connect error:', err);
+    document.getElementById('scan-status').textContent = 'Not found';
+    if (btn) { btn.textContent = 'Scan for ROMO Device'; btn.disabled = false; }
+    toast('Could not connect to ROMO', 'red');
+  }
+}
+
+async function connectGatt() {
+  bleServer = await bleDevice.gatt.connect();
+  const service = await bleServer.getPrimaryService(SERVICE_UUID);
+  charRX = await service.getCharacteristic(CHAR_UUID_RX);
+  charTX = await service.getCharacteristic(CHAR_UUID_TX);
+  await charTX.startNotifications();
+  charTX.addEventListener('characteristicvaluechanged', onBleNotify);
+  isBleConnected = true;
+  updateUI();
+  // Send any pending items
+  if (queue.some(i => i.status === 'pending')) {
+    setTimeout(() => processNextItem(), 400);
+  }
+}
+
+// ════════════════════════════════════════
+// BLE — DISCONNECT / RECONNECT
+// ════════════════════════════════════════
+function onBleDisconnected() {
+  isBleConnected = false;
+  charRX = null;
+  charTX = null;
+  updateUI();
+  toast('Device disconnected', 'red');
+
+  if (bleDevice && reconnectCount < MAX_RECONNECT) {
+    reconnectCount++;
+    reconnectTimer = setTimeout(attemptReconnect, 2000 * reconnectCount);
+  }
+}
+
+async function attemptReconnect() {
+  if (!bleDevice || isBleConnected) return;
+  try {
+    await connectGatt();
+    toast('Reconnected to ROMO', 'amber');
+    reconnectCount = 0;
+  } catch (e) {
+    console.warn('Reconnect failed:', e);
+    if (reconnectCount < MAX_RECONNECT) {
+      reconnectCount++;
+      reconnectTimer = setTimeout(attemptReconnect, 2000 * reconnectCount);
     }
+  }
+}
 
-    // ════════════════════════════════════════════════════════════
-    // RENDER QUEUE
-    // ════════════════════════════════════════════════════════════
-    function renderQueue() {
-      const list = document.getElementById('queueList');
-      list.innerHTML = queue.map((item, i) => `
-        <div class="queue-item">
-          <div class="qi-type">${item.category === 'V' ? 'VIDEO' : item.category === 'I' ? 'IMAGE' : 'ARTICLE'}</div>
-          <div class="qi-title">${item.title}</div>
-          <div class="qi-meta">${item.source} · ${item.time}</div>
-        </div>
-      `).join('');
-    }
+// ════════════════════════════════════════
+// BLE — SEND QUEUE ITEM
+// ════════════════════════════════════════
+async function processNextItem() {
+  if (isSending || !isBleConnected || !charRX) return;
 
-    // ════════════════════════════════════════════════════════════
-    // BLE CONNECTION - PERSISTENT RECONNECT
-    // ════════════════════════════════════════════════════════════
-    async function connectDevice() {
-      try {
-        bleDevice = await navigator.bluetooth.requestDevice({
-          filters: [{ name: 'ROMO' }],
-          optionalServices: [SERVICE_UUID]
-        });
+  const item = queue.find(i => i.status === 'pending');
+  if (!item) { updateUI(); return; }
 
-        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+  isSending = true;
+  updateUI();
 
-        bleServer = await bleDevice.gatt.connect();
-        const service = await bleServer.getPrimaryService(SERVICE_UUID);
-        
-        charRX = await service.getCharacteristic(CHAR_UUID_RX);
-        charTX = await service.getCharacteristic(CHAR_UUID_TX);
+  const packet = `${item.category}|${item.title.substring(0,48)}|${item.source.substring(0,16)}`;
+  console.log('→ ROMO:', packet);
 
-        await charTX.startNotifications();
-        charTX.addEventListener('characteristicvaluechanged', handleNotification);
-
-        reconnectAttempts = 0;
+  try {
+    const enc = new TextEncoder();
+    await charRX.writeValue(enc.encode(packet));
+    // ACK handled in onBleNotify; timeout as safety net
+    setTimeout(() => {
+      if (isSending) {
+        isSending = false;
+        item.status = 'failed';
         updateUI();
-        showScreen('connected');
-        
-        // Auto-process queue if there are items
-        if (queue.length > 0) {
-          setTimeout(() => processQueue(), 500);
-        }
-        
-        return true;
-      } catch (error) {
-        console.error('Connection error:', error);
-        return false;
+        toast('Sync timed out', 'red');
       }
+    }, 6000);
+  } catch (err) {
+    console.error('Send error:', err);
+    isSending = false;
+    item.status = 'failed';
+    updateUI();
+    toast('Send failed — will retry', 'red');
+  }
+}
+
+// ════════════════════════════════════════
+// BLE — RECEIVE NOTIFICATION (ACK from ROMO)
+// ════════════════════════════════════════
+function onBleNotify(event) {
+  const msg = new TextDecoder().decode(event.target.value);
+  console.log('← ROMO:', msg);
+  isSending = false;
+
+  if (msg.startsWith('OK|')) {
+    // OK|V|4  — category char, new count
+    const item = queue.find(i => i.status === 'pending');
+    if (item) {
+      item.status = 'sent';
+      sentCount++;
+      toast(`Sent to ROMO · ${CAT_LABEL[item.category]}`, 'amber');
     }
+    updateUI();
+    // Send next pending item
+    setTimeout(() => processNextItem(), 200);
 
-    async function reconnectToLastDevice() {
-      if (!bleDevice) return false;
+  } else if (msg.startsWith('ERR|FULL')) {
+    toast('ROMO device storage full', 'red');
+    const item = queue.find(i => i.status === 'pending');
+    if (item) item.status = 'failed';
+    updateUI();
 
-      try {
-        if (!bleDevice.gatt.connected) {
-          console.log('Attempting to reconnect to', bleDevice.name);
-          bleServer = await bleDevice.gatt.connect();
-          const service = await bleServer.getPrimaryService(SERVICE_UUID);
+  } else if (msg.startsWith('ERR|')) {
+    const item = queue.find(i => i.status === 'pending');
+    if (item) item.status = 'failed';
+    updateUI();
+    toast('Device error: ' + msg, 'red');
+  }
+}
 
-          charRX = await service.getCharacteristic(CHAR_UUID_RX);
-          charTX = await service.getCharacteristic(CHAR_UUID_TX);
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+let toastTimer = null;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' ' + type : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
 
-          await charTX.startNotifications();
-          charTX.addEventListener('characteristicvaluechanged', handleNotification);
+// ════════════════════════════════════════
+// ESCAPE HTML
+// ════════════════════════════════════════
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-          reconnectAttempts = 0;
-          updateUI();
-          
-          // Process queue if connected
-          if (queue.length > 0) {
-            setTimeout(() => processQueue(), 500);
-          }
-          
-          return true;
-        }
-        return true;
-      } catch (error) {
-        console.error('Reconnect error:', error);
-        reconnectAttempts++;
-        
-        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-          bleDevice = null;
-          return false;
-        }
-        
-        // Retry after delay
-        setTimeout(reconnectToLastDevice, 2000);
-        return false;
-      }
-    }
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+window.addEventListener('load', async () => {
+  updateAllTimes();
+  setInterval(updateAllTimes, 10000);
 
-    function onDisconnected() {
-      console.log('Device disconnected');
-      bleServer = null;
-      charRX = null;
-      charTX = null;
-      updateUI();
+  // Check if launched from Share Sheet
+  const hasShared = await handleSharedContent();
 
-      // Try to reconnect automatically
-      if (bleDevice) {
-        setTimeout(reconnectToLastDevice, 1000);
-      }
-    }
-
-    function handleNotification(event) {
-      const value = new TextDecoder().decode(event.target.value);
-      console.log('← ROMO:', value);
-      
-      if (value.startsWith('OK|')) {
-        if (queue.length > 0) {
-          queue.shift();
-          sentCount++;
-          updateUI();
-          processQueue();
-        }
-      }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // SEND TO ROMO
-    // ════════════════════════════════════════════════════════════
-    async function sendToROMO(category, title, source) {
-      if (!charRX || !bleDevice || !bleDevice.gatt.connected) return false;
-
-      const packet = `${category}|${title}|${source}`;
-      console.log('→ Sending:', packet);
-
-      try {
-        const encoder = new TextEncoder();
-        await charRX.writeValue(encoder.encode(packet));
-        return true;
-      } catch (error) {
-        console.error('Send failed:', error);
-        return false;
-      }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // PROCESS QUEUE
-    // ════════════════════════════════════════════════════════════
-    async function processQueue() {
-      if (!bleDevice || !bleDevice.gatt.connected || queue.length === 0) return;
-      
-      document.getElementById('syncStatus').textContent = 'SYNCING';
-      
-      const item = queue[0];
-      const success = await sendToROMO(item.category, item.title, item.source);
-      
-      if (!success) {
-        document.getElementById('syncStatus').textContent = 'SYNC FAILED';
-        setTimeout(() => {
-          document.getElementById('syncStatus').textContent = 'SYNCED';
-        }, 2000);
-      } else {
-        document.getElementById('syncStatus').textContent = 'SYNCED';
-      }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // CONTENT TYPE DETECTION
-    // ════════════════════════════════════════════════════════════
-    function detectCategory(url) {
-      const u = url.toLowerCase();
-      
-      if (u.includes('youtube.com') || u.includes('youtu.be') ||
-          u.includes('vimeo.com') || u.includes('twitch.tv')) {
-        return 'V';
-      }
-      
-      if (u.includes('pinterest.com') || u.includes('instagram.com') ||
-          u.includes('are.na') || u.includes('unsplash.com') ||
-          u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-        return 'I';
-      }
-      
-      return 'A';
-    }
-
-    function extractSource(url) {
-      try {
-        const domain = new URL(url).hostname.replace('www.', '');
-        return domain.split('.')[0].toUpperCase().substring(0, 16);
-      } catch {
-        return 'WEB';
-      }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // HANDLE SHARED CONTENT
-    // ════════════════════════════════════════════════════════════
-    async function handleSharedContent() {
-      const params = new URLSearchParams(window.location.search);
-      const title = params.get('title') || '';
-      const text = params.get('text') || '';
-      const url = params.get('url') || text;
-
-      if (url) {
-        const category = detectCategory(url);
-        const source = extractSource(url);
-        const finalTitle = (title || 'Shared content').substring(0, 48);
-
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-
-        queue.push({
-          category,
-          title: finalTitle,
-          source,
-          time: timeStr,
-          url
-        });
-
-        updateUI();
-        showScreen('queue');
-
-        // If we have a previously paired device, reconnect and send
-        if (bleDevice) {
-          const connected = await reconnectToLastDevice();
-          if (connected && bleDevice.gatt.connected) {
-            setTimeout(() => processQueue(), 500);
-          }
-        }
-      }
-    }
-
-    // ════════════════════════════════════════════════════════════
-    // EVENT LISTENERS
-    // ════════════════════════════════════════════════════════════
-    document.getElementById('scanBtn').addEventListener('click', connectDevice);
-    document.getElementById('reconnectBtn').addEventListener('click', connectDevice);
-
-    // Auto-process queue when connected
-    setInterval(() => {
-      if (bleDevice && bleDevice.gatt.connected && queue.length > 0) {
-        processQueue();
-      }
-    }, 3000);
-
-    // ════════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ════════════════════════════════════════════════════════════
-    window.addEventListener('load', async () => {
-      updateTime();
-      setInterval(updateTime, 1000);
-
-      if (!navigator.bluetooth) {
-        alert('Web Bluetooth not supported');
-        return;
-      }
-
-      // Handle shared content first
-      await handleSharedContent();
-
-      // Try to use previously paired device
+  if (hasShared) {
+    // Jump to queue; try to connect if we have a paired device
+    showScreen('queue');
+    if (navigator.bluetooth) {
       try {
         const devices = await navigator.bluetooth.getDevices();
-        const romoDevice = devices.find(d => d.name === 'ROMO');
-        
-        if (romoDevice) {
-          console.log('Found previously paired ROMO device');
-          bleDevice = romoDevice;
-          
-          // Try to reconnect
-          const connected = await reconnectToLastDevice();
-          
-          setTimeout(() => {
-            if (bleDevice && bleDevice.gatt.connected) {
-              showScreen('connected');
-            } else {
-              showScreen('pairing');
-            }
-          }, 1000);
-        } else {
-          showScreen('pairing');
+        const romo    = devices.find(d => d.name === 'ROMO');
+        if (romo) {
+          bleDevice = romo;
+          bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
+          await attemptReconnect();
         }
-      } catch (error) {
-        console.error('Error retrieving devices:', error);
-        showScreen('pairing');
-      }
-    });
-
-    // Handle visibility change - attempt to reconnect when app comes back to foreground
-    document.addEventListener('visibilitychange', async () => {
-      if (!document.hidden && bleDevice && !bleDevice.gatt.connected) {
-        console.log('App returned to foreground, attempting to reconnect');
-        await reconnectToLastDevice();
-      }
-    });
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('data:text/javascript;base64,c2VsZi5hZGRFdmVudExpc3RlbmVyKCdpbnN0YWxsJywgKCkgPT4gc2VsZi5za2lwV2FpdGluZygpKTs=').catch(err => console.log('SW:', err));
+      } catch(e) { /* getDevices may not be available */ }
     }
-  </script>
+    return;
+  }
+
+  // Normal launch
+  document.getElementById('splash-loader').textContent = 'Loading';
+  await new Promise(r => setTimeout(r, 1400));
+
+  // Check if previously paired
+  let hasPairedDevice = false;
+  if (navigator.bluetooth) {
+    try {
+      const devices = await navigator.bluetooth.getDevices();
+      const romo    = devices.find(d => d.name === 'ROMO');
+      if (romo) {
+        hasPairedDevice = true;
+        bleDevice = romo;
+        bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
+        document.getElementById('splash-loader').textContent = 'Reconnecting';
+        try { await connectGatt(); } catch(e) { /* offline is fine */ }
+      }
+    } catch(e) {}
+  }
+
+  if (hasPairedDevice) {
+    // Skip onboarding — go to queue or connected screen
+    showScreen(isBleConnected ? 'connected' : 'queue');
+  } else {
+    // First run — show onboarding
+    showScreen('onboard-a');
+  }
+});
+
+// Re-attempt reconnect when app comes to foreground
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && bleDevice && !isBleConnected) {
+    attemptReconnect();
+  }
+});
+
+// Periodic retry for pending items
+setInterval(() => {
+  if (isBleConnected && !isSending && queue.some(i => i.status === 'pending')) {
+    processNextItem();
+  }
+}, 4000);
+
+// Service worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
 </body>
 </html>
