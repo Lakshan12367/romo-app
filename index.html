@@ -436,47 +436,46 @@
 
   <!-- S11: SETTINGS -->
   <div class="screen" id="settings">
-    <div class="sb"><span id="time5">9:41</span><span>●●●</span></div>
-    <div class="sc-body">
-      <div style="padding-top:12px">
-        <div class="app-title" style="font-size:20px;margin-bottom:12px">Settings</div>
-        
-        <div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-size:13px;margin-bottom:2px" id="settingsDeviceName">ROMO-001 · Connected</div>
-              <div class="mono-label">Synced <span id="lastSync">just now</span></div>
-            </div>
-            <div id="connectionDot" style="width:7px;height:7px;background:var(--paper);border-radius:50%"></div>
-          </div>
+    <div class="sb"><span id="time5">9:41</span><span
+●●●</span></div>
+<div class="sc-body">
+<div style="padding-top:12px">
+<div class="app-title" style="font-size:20px;margin-bottom:12px">Settings</div>
+<div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:13px;margin-bottom:2px" id="settingsDeviceName">ROMO-001 · Connected</div>
+          <div class="mono-label">Synced <span id="lastSync">just now</span></div>
         </div>
-
-        <div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
-          <div class="mono-label" style="margin-bottom:3px">App Status</div>
-          <div style="font-size:15px;margin-bottom:6px"><span id="queueTotal">0</span> items in queue</div>
-          <div style="font-size:15px;margin-bottom:6px"><span id="sentTotal">0</span> items sent</div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label">Connection</span>
-          <span class="setting-val" id="connectionStatus">Connected</span>
-        </div>
-        <div class="setting-row">
-          <span class="setting-label">Device Name</span>
-          <span class="setting-val" id="deviceNameSetting">—</span>
-        </div>
-        <div class="setting-row" onclick="disconnect()">
-          <span class="setting-label" style="color:#f66">Disconnect Device</span>
-          <span class="setting-val">→</span>
-        </div>
-
-        <div style="margin-top:20px">
-          <button class="btn-ghost" onclick="showScreen('queue')">Back to Queue</button>
-        </div>
+        <div id="connectionDot" style="width:7px;height:7px;background:var(--paper);border-radius:50%"></div>
       </div>
     </div>
-  </div>
 
+    <div style="background:var(--structure);border:1px solid var(--line);padding:10px;margin-bottom:12px">
+      <div class="mono-label" style="margin-bottom:3px">App Status</div>
+      <div style="font-size:15px;margin-bottom:6px"><span id="queueTotal">0</span> items in queue</div>
+      <div style="font-size:15px;margin-bottom:6px"><span id="sentTotal">0</span> items sent</div>
+    </div>
+
+    <div class="setting-row">
+      <span class="setting-label">Connection</span>
+      <span class="setting-val" id="connectionStatus">Connected</span>
+    </div>
+    <div class="setting-row">
+      <span class="setting-label">Device Name</span>
+      <span class="setting-val" id="deviceNameSetting">—</span>
+    </div>
+    <div class="setting-row" onclick="disconnect()">
+      <span class="setting-label" style="color:#f66">Disconnect Device</span>
+      <span class="setting-val">→</span>
+    </div>
+
+    <div style="margin-top:20px">
+      <button class="btn-ghost" onclick="showScreen('queue')">Back to Queue</button>
+    </div>
+  </div>
+</div>
+</div>
   <script>
     // ════════════════════════════════════════════════════════════
     // BLE CONSTANTS (matching ESP32 firmware)
@@ -584,7 +583,7 @@
         charTX.addEventListener('characteristicvaluechanged', handleNotification);
 
         updateUI();
-        showScreen('queue');
+        showScreen('connected');
         return true;
       } catch (error) {
         alert('Connection failed: ' + error.message);
@@ -772,3 +771,4 @@
   </script>
 </body>
 </html>
+```
