@@ -1261,33 +1261,7 @@ function extractTitle(raw, url) {
   catch { return 'Shared content'; }
 }
 
-// ════════════════════════════════════════
-// SHARED CONTENT HANDLER (Web Share Target)
-// ════════════════════════════════════════
-async function handleSharedContent() {
-  const params = new URLSearchParams(window.location.search);
-  const rawTitle = params.get('title') || '';
-  const rawText  = params.get('text')  || '';
-  const rawUrl   = params.get('url')   || rawText;
 
-  if (!rawUrl) return false;
-
-  const url      = rawUrl.trim();
-  const category = detectCategory(url);
-  const source   = extractSource(url);
-  const title    = extractTitle(rawTitle, url);
-  const time     = new Date().toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
-
-  const item = { id: Date.now(), category, title, source, time, url, status: 'pending' };
-  queue.push(item);
-
-  // Clear URL params so back/refresh doesn't re-add
-  if (window.history.replaceState) {
-    window.history.replaceState({}, document.title, window.location.pathname);
-  }
-
-  return true;
-}
 
 // ════════════════════════════════════════
 // BLE — CONNECT
@@ -1464,37 +1438,94 @@ function escHtml(str) {
 }
 
 // ════════════════════════════════════════
+// INGEST A SHARE PAYLOAD
+// Called from SW message OR URL-param fallback.
+// Does NOT touch the page URL or reload anything.
+// ════════════════════════════════════════
+function ingestShare({ title, text, url }) {
+  const rawUrl   = (url || text || '').trim();
+  if (!rawUrl) return;
+
+  const category = detectCategory(rawUrl);
+  const source   = extractSource(rawUrl);
+  const finalTitle = extractTitle(title, rawUrl);
+  const time     = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+  const item = { id: Date.now(), category, source, title: finalTitle, time, url: rawUrl, status: 'pending' };
+  queue.push(item);
+  updateUI();
+
+  // If already connected, send immediately
+  if (isBleConnected && !isSending) {
+    setTimeout(() => processNextItem(), 200);
+  }
+
+  // Navigate to queue so user sees it
+  showScreen('queue');
+  toast('Added to queue · ' + CAT_LABEL[category], 'amber');
+}
+
+// ════════════════════════════════════════
+// SERVICE WORKER — REGISTER + MESSAGE
+// ════════════════════════════════════════
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    await navigator.serviceWorker.register('sw.js');
+  } catch(e) {
+    console.warn('SW registration failed:', e);
+  }
+
+  // Listen for SHARE_RECEIVED from the SW
+  // This fires when the app is ALREADY OPEN and a share comes in.
+  // The page is NOT reloaded — BLE connection stays alive.
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'SHARE_RECEIVED') {
+      ingestShare(e.data);
+    }
+  });
+
+  // Check for a pending share stored by the SW when the app was closed
+  try {
+    const cache    = await caches.open('romo-v1');
+    const response = await cache.match('/__pending-share__');
+    if (response) {
+      const data = await response.json();
+      await cache.delete('/__pending-share__');
+      ingestShare(data);
+      return true;   // had a pending share
+    }
+  } catch(e) {}
+
+  return false;
+}
+
+// ════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════
 window.addEventListener('load', async () => {
   updateAllTimes();
   setInterval(updateAllTimes, 10000);
 
-  // Check if launched from Share Sheet
-  const hasShared = await handleSharedContent();
+  // Register SW first — sets up message listener before anything else
+  const hadPendingShare = await registerSW();
 
-  if (hasShared) {
-    // Jump to queue; try to connect if we have a paired device
-    showScreen('queue');
-    if (navigator.bluetooth) {
-      try {
-        const devices = await navigator.bluetooth.getDevices();
-        const romo    = devices.find(d => d.name === 'ROMO');
-        if (romo) {
-          bleDevice = romo;
-          bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
-          await attemptReconnect();
-        }
-      } catch(e) { /* getDevices may not be available */ }
-    }
-    return;
+  // ── Fallback: URL params (old-style share or direct link) ──
+  // Only runs if the SW didn't handle it (e.g. no SW support).
+  const params   = new URLSearchParams(window.location.search);
+  const urlParam = (params.get('url') || params.get('text') || '').trim();
+  const hasUrlShare = !!urlParam && !hadPendingShare;
+
+  if (hasUrlShare) {
+    ingestShare({ title: params.get('title') || '', url: urlParam });
+    // Clean URL without reloading
+    window.history.replaceState({}, '', window.location.pathname);
   }
 
-  // Normal launch
-  document.getElementById('splash-loader').textContent = 'Loading';
-  await new Promise(r => setTimeout(r, 1400));
+  const hasAnyShare = hadPendingShare || hasUrlShare;
 
-  // Check if previously paired
+  // ── Try to silently reconnect to a previously paired ROMO ──
   let hasPairedDevice = false;
   if (navigator.bluetooth) {
     try {
@@ -1504,39 +1535,45 @@ window.addEventListener('load', async () => {
         hasPairedDevice = true;
         bleDevice = romo;
         bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
-        document.getElementById('splash-loader').textContent = 'Reconnecting';
-        try { await connectGatt(); } catch(e) { /* offline is fine */ }
+        // Silent reconnect — don't await, don't block UI
+        connectGatt().catch(() => {});
       }
     } catch(e) {}
   }
 
+  if (hasAnyShare) {
+    // Already navigated to queue inside ingestShare(); just return.
+    return;
+  }
+
+  // ── Normal launch ──
+  document.getElementById('splash-loader').textContent = 'Loading';
+  await new Promise(r => setTimeout(r, 1200));
+
   if (hasPairedDevice) {
-    // Skip onboarding — go to queue or connected screen
-    showScreen(isBleConnected ? 'connected' : 'queue');
+    // Known device — skip onboarding, go straight to queue
+    // (will show connected screen if GATT connected in time)
+    setTimeout(() => {
+      showScreen(isBleConnected ? 'connected' : 'queue');
+    }, 600);
   } else {
-    // First run — show onboarding
     showScreen('onboard-a');
   }
 });
 
-// Re-attempt reconnect when app comes to foreground
+// ── Re-attempt when app comes back to foreground ──
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && bleDevice && !isBleConnected) {
     attemptReconnect();
   }
 });
 
-// Periodic retry for pending items
+// ── Periodic retry for failed/pending items ──
 setInterval(() => {
   if (isBleConnected && !isSending && queue.some(i => i.status === 'pending')) {
     processNextItem();
   }
 }, 4000);
-
-// Service worker registration
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
 </script>
 </body>
 </html>
