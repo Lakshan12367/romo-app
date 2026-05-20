@@ -497,36 +497,18 @@
     }
 
     function detectCategory(url) {
-      if (!url) return 'A';
-      
       const u = url.toLowerCase();
       
-      // VIDEO detection — must check FIRST before ARTICLE
-      if (u.includes('youtube.com') || u.includes('youtu.be') || 
-          u.includes('youtube/') || u.includes('youtube?') ||
-          u.includes('vimeo.com') || u.includes('vimeo/') ||
-          u.includes('tiktok.com') || u.includes('tiktok/') ||
-          u.includes('vm.tiktok') || u.includes('vt.tiktok') ||
-          u.includes('twitch.tv') || u.includes('twitch/') ||
-          u.includes('video') || u.includes('watch?v=') ||
-          u.match(/\.(mp4|mov|avi|mkv|webm|m3u8)$/i)) {
+      if (u.includes('youtube') || u.includes('youtu.be') || u.includes('vimeo') || 
+          u.includes('tiktok') || u.includes('twitch') || u.includes('video')) {
         return 'V';
       }
       
-      // IMAGE detection
-      if (u.includes('pinterest.com') || u.includes('pinterest/') ||
-          u.includes('instagram.com') || u.includes('instagram/') ||
-          u.includes('are.na') || u.includes('are.na/') ||
-          u.includes('unsplash.com') || u.includes('unsplash/') ||
-          u.includes('pexels.com') || u.includes('pexels/') ||
-          u.includes('flickr.com') || u.includes('flickr/') ||
-          u.includes('imgur.com') || u.includes('imgur/') ||
-          u.includes('/image') || u.includes('/photo') ||
-          u.match(/\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i)) {
+      if (u.includes('pinterest') || u.includes('instagram') || u.includes('are.na') || 
+          u.includes('unsplash') || u.includes('image') || u.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
         return 'I';
       }
       
-      // ARTICLE (default for everything else)
       return 'A';
     }
 
@@ -563,7 +545,36 @@
         updateUI();
         showScreen('queue');
 
-        if (bleDevice && bleDevice.gatt.connected) {
+        // Try to reconnect automatically when content is shared
+        if (!bleDevice || !bleDevice.gatt.connected) {
+          console.log('Auto-reconnecting to ROMO for shared content...');
+          try {
+            // Try to reconnect to the previously paired device
+            const devices = await navigator.bluetooth.getDevices();
+            const romoDevice = devices.find(d => d.name === 'ROMO');
+            
+            if (romoDevice && romoDevice.gatt.connected) {
+              bleDevice = romoDevice;
+              bleServer = await bleDevice.gatt.connect();
+              const service = await bleServer.getPrimaryService(SERVICE_UUID);
+              charRX = await service.getCharacteristic(CHAR_UUID_RX);
+              charTX = await service.getCharacteristic(CHAR_UUID_TX);
+              await charTX.startNotifications();
+              charTX.addEventListener('characteristicvaluechanged', handleNotification);
+              
+              console.log('Auto-reconnected successfully');
+              await processQueue();
+            } else {
+              // Device not found or not connected, show pairing screen
+              showScreen('pairing');
+            }
+          } catch (error) {
+            console.error('Auto-reconnect failed:', error);
+            // If reconnect fails, show pairing screen
+            showScreen('pairing');
+          }
+        } else {
+          // Already connected, process immediately
           await processQueue();
         }
       }
