@@ -598,7 +598,7 @@ body {
         <div class="step-num">03</div>
         <div class="step-body">
           <div class="step-title">Pick up your ROMO device</div>
-          <div class="step-sub">Keep · Release · Archive — all on device</div>
+          <div class="step-sub">Keep or Release — all on device</div>
         </div>
       </div>
       <div class="divider"></div>
@@ -634,33 +634,24 @@ body {
     <div class="divider"></div>
     <div style="flex:1;overflow:hidden">
       <div class="mono-label" style="margin-bottom:10px">On the ROMO device you can</div>
-      <div class="action-grid">
+      <div class="action-grid" style="grid-template-columns:1fr 1fr">
         <div class="action-cell">
           <div class="action-icon">□</div>
           <div class="action-name">Keep</div>
-          <div class="action-desc">Stays on device</div>
+          <div class="action-desc">Reverse the release</div>
         </div>
         <div class="action-cell" style="border-color:var(--amber-dim)">
           <div class="action-icon" style="color:var(--amber)">◎</div>
           <div class="action-name">Release</div>
-          <div class="action-desc">Deleted · ritual</div>
-        </div>
-        <div class="action-cell">
-          <div class="action-icon">⊡</div>
-          <div class="action-name">Archive</div>
-          <div class="action-desc">→ Personal</div>
+          <div class="action-desc">Let go · ritual</div>
         </div>
       </div>
       <div class="divider"></div>
       <div class="mono-label" style="margin-bottom:8px">This app only shows</div>
-      <div class="view-grid">
+      <div class="view-grid" style="grid-template-columns:1fr">
         <div class="view-cell">
           <div class="vc-title">Queue</div>
-          <div class="vc-sub">Pending · View only</div>
-        </div>
-        <div class="view-cell">
-          <div class="vc-title">Personal</div>
-          <div class="vc-sub">Archive · View only</div>
+          <div class="vc-sub">Pending and sent · View only</div>
         </div>
       </div>
     </div>
@@ -779,7 +770,6 @@ body {
     </div>
     <div class="tabs-row">
       <div class="app-tab cur" onclick="switchTab('queue')">Queue · <span id="q-count-tab">0</span></div>
-      <div class="app-tab" onclick="switchTab('personal')">Personal</div>
       <div class="app-tab" onclick="showScreen('settings')">Settings</div>
     </div>
 
@@ -793,7 +783,7 @@ body {
 
     <!-- Empty state -->
     <div class="queue-empty" id="q-empty">
-      <div class="empty-icon">📤</div>
+      <div class="empty-icon" style="font-family:var(--fm);font-size:22px;opacity:0.15">—</div>
       <div class="empty-title">Queue is clear</div>
       <div class="empty-sub">Share anything from any app<br>to add to ROMO</div>
       <div class="divider" style="width:100%"></div>
@@ -841,46 +831,13 @@ body {
         <div class="mono-label" id="d-status-text">Synced to device</div>
       </div>
       <div style="font-size:12px;color:var(--dim);line-height:1.6">
-        Use your ROMO to Keep · Release · Archive<br>
-        Rotate to browse · Click to select
+        Use your ROMO to Keep or Release<br>
+        Rotate to decide · hold to go back
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     S09 · PERSONAL ARCHIVE
-══════════════════════════════════════ -->
-<div class="screen" id="personal">
-  <div class="sb">
-    <span id="t-pers"></span>
-    <div class="sb-right">
-      <div class="ble-dot" id="bd-pers"></div>
-      <span>●●●</span>
-    </div>
-  </div>
-  <div class="sc-body">
-    <div class="queue-header">
-      <div class="app-title" style="font-size:22px">ROMO</div>
-      <div class="sync-badge" id="pers-sync">SYNCED</div>
-    </div>
-    <div class="tabs-row">
-      <div class="app-tab" onclick="switchTab('queue')">Queue</div>
-      <div class="app-tab cur" onclick="switchTab('personal')">Personal · <span id="pers-count">0</span></div>
-      <div class="app-tab" onclick="showScreen('settings')">Settings</div>
-    </div>
-    <div class="mono-label" style="margin-bottom:12px">Your curated archive</div>
-    <div class="queue-list" id="pers-list"></div>
-    <div class="queue-empty" id="pers-empty" style="display:none">
-      <div class="empty-icon">🗂</div>
-      <div class="empty-title">No archived items yet</div>
-      <div class="empty-sub">Use your ROMO device to archive<br>items from the queue</div>
-    </div>
-    <div class="queue-footer">
-      <div class="mono-label">Manage archive on your ROMO device</div>
-    </div>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════
      S10 · SYNCING
@@ -941,7 +898,7 @@ body {
       <div class="mono-label" style="margin-bottom:4px">Queue Storage</div>
       <div style="font-size:15px;margin-bottom:8px"><span id="set-queue-n">0</span> items in queue</div>
       <div class="storage-bar" id="storage-bar"></div>
-      <div class="mono-label" style="margin-top:4px">Max 50 items</div>
+      <div class="mono-label" style="margin-top:4px">Soft limit · 80 items</div>
     </div>
 
     <!-- Settings rows -->
@@ -1005,11 +962,26 @@ let reconnectCount = 0;
 const MAX_RECONNECT = 5;
 
 let queue        = [];    // { id, category, title, source, time, url, status }
-let personal     = [];    // archived items (demo seed)
 let sentCount    = 0;
 let currentFilter = 'all';
 let detailItem   = null;
 let isSending    = false;
+
+// ── Persist queue to localStorage ─────
+function saveQueue() {
+  try {
+    localStorage.setItem('romo_queue', JSON.stringify(queue));
+    localStorage.setItem('romo_sent', String(sentCount));
+  } catch(e) {}
+}
+function loadQueue() {
+  try {
+    const q = localStorage.getItem('romo_queue');
+    if (q) queue = JSON.parse(q);
+    const s = localStorage.getItem('romo_sent');
+    if (s) sentCount = parseInt(s, 10) || 0;
+  } catch(e) {}
+}
 
 // ════════════════════════════════════════
 // SCREEN NAVIGATION
@@ -1106,29 +1078,24 @@ function updateUI() {
   if (document.getElementById('set-sent'))
     document.getElementById('set-sent').textContent = sentCount + ' items';
 
-  // Storage bar
+  // Storage bar (soft limit: 80)
   const bar = document.getElementById('storage-bar');
   if (bar) {
     bar.innerHTML = '';
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 40; i++) {
       const seg = document.createElement('div');
-      seg.className = 'storage-seg' + (i < total ? ' filled' : '');
+      const threshold = Math.floor(i * 80 / 40);
+      seg.className = 'storage-seg' + (threshold < total ? ' filled' : '');
       bar.appendChild(seg);
     }
   }
-
-  // Personal
-  renderPersonal();
-  const pc = document.getElementById('pers-count');
-  if (pc) pc.textContent = personal.length;
 }
 
 // ════════════════════════════════════════
 // TAB SWITCHING
 // ════════════════════════════════════════
 function switchTab(tab) {
-  if (tab === 'queue')    showScreen('queue');
-  if (tab === 'personal') showScreen('personal');
+  if (tab === 'queue') showScreen('queue');
 }
 
 // ════════════════════════════════════════
@@ -1177,30 +1144,6 @@ function renderQueue() {
 }
 
 // ════════════════════════════════════════
-// RENDER PERSONAL
-// ════════════════════════════════════════
-function renderPersonal() {
-  const list  = document.getElementById('pers-list');
-  const empty = document.getElementById('pers-empty');
-  if (!list || !empty) return;
-
-  if (personal.length === 0) {
-    list.style.display  = 'none';
-    empty.style.display = 'flex';
-    return;
-  }
-  list.style.display  = 'block';
-  empty.style.display = 'none';
-
-  list.innerHTML = personal.map(item => `
-    <div class="queue-item">
-      <div class="qi-type">${CAT_LABEL[item.category] || 'ITEM'} · ARCHIVED</div>
-      <div class="qi-title">${escHtml(item.title)}</div>
-      <div class="qi-meta">${escHtml(item.source)} · ${item.time}</div>
-    </div>`).join('');
-}
-
-// ════════════════════════════════════════
 // ITEM DETAIL
 // ════════════════════════════════════════
 const ICONS = { V:'▶', I:'◼', A:'≡' };
@@ -1242,7 +1185,7 @@ function openDetail(idx) {
 // ════════════════════════════════════════
 function detectCategory(url) {
   const u = (url || '').toLowerCase();
-  if (/youtube\.com|youtu\.be|vimeo\.com|twitch\.tv|dailymotion/.test(u)) return 'V';
+  if (/youtube\.com|youtu\.be|vimeo\.com|twitch\.tv|dailymotion|tiktok\.com/.test(u)) return 'V';
   if (/pinterest\.com|instagram\.com|are\.na|unsplash\.com|flickr\.com|\.(jpg|jpeg|png|gif|webp)$/.test(u)) return 'I';
   return 'A';
 }
@@ -1401,14 +1344,21 @@ function onBleNotify(event) {
       toast(`Sent to ROMO · ${CAT_LABEL[item.category]}`, 'amber');
     }
     updateUI();
+    saveQueue();
     // Send next pending item
     setTimeout(() => processNextItem(), 200);
 
   } else if (msg.startsWith('ERR|FULL')) {
-    toast('ROMO device storage full', 'red');
+    // Device is feeling heavy but still accepted — mark as sent
     const item = queue.find(i => i.status === 'pending');
-    if (item) item.status = 'failed';
+    if (item) {
+      item.status = 'sent';
+      sentCount++;
+    }
+    toast('Device is feeling heavy', 'amber');
     updateUI();
+    saveQueue();
+    setTimeout(() => processNextItem(), 200);
 
   } else if (msg.startsWith('ERR|')) {
     const item = queue.find(i => i.status === 'pending');
@@ -1453,6 +1403,7 @@ function ingestShare({ title, text, url }) {
 
   const item = { id: Date.now(), category, source, title: finalTitle, time, url: rawUrl, status: 'pending' };
   queue.push(item);
+  saveQueue();
   updateUI();
 
   // If already connected, send immediately
@@ -1505,6 +1456,7 @@ async function registerSW() {
 // INIT
 // ════════════════════════════════════════
 window.addEventListener('load', async () => {
+  loadQueue();
   updateAllTimes();
   setInterval(updateAllTimes, 10000);
 
